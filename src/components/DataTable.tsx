@@ -167,7 +167,8 @@ export function DataTable({ data }: DataTableProps) {
             (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
             data.rows.length
           )}{" "}
-          of {data.rows.length.toLocaleString()} rows
+          of {data.rows.length.toLocaleString()} loaded rows
+          {data.hasMore && ` (${data.metadata.numRows.toLocaleString()} total in file)`}
         </div>
 
         <div className="flex items-center gap-2">

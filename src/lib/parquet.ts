@@ -20,6 +20,13 @@ export interface ParquetData {
   columns: string[]
   rows: Record<string, unknown>[]
   metadata: ParquetMetadata
+  hasMore: boolean
+  loadedRows: number
+}
+
+export interface ReadOptions {
+  limit?: number
+  offset?: number
 }
 
 let wasmInitialized = false
@@ -31,10 +38,10 @@ export async function initParquet() {
   }
 }
 
-export async function readParquetFile(file: File): Promise<ParquetData> {
+// Read metadata and schema only (fast)
+export async function readParquetMetadata(file: File): Promise<ParquetMetadata> {
   await initParquet()
 
-  // Open the parquet file
   const parquetFile = await ParquetFile.fromFile(file)
 
   // Get metadata
@@ -43,23 +50,61 @@ export async function readParquetFile(file: File): Promise<ParquetData> {
   const numRows = Number(fileMetadata.numRows())
   const numRowGroups = parquetMetadata.numRowGroups()
 
-  // Read the table
-  const wasmTable = await parquetFile.read()
+  // Get schema by reading a small sample
+  const wasmSchema = parquetFile.schema()
+  const ipcStream = wasmSchema.intoIPCStream()
+  const schemaTable = tableFromIPC(ipcStream)
 
-  // Convert to Arrow IPC and parse with apache-arrow
-  const ipcStream = wasmTable.intoIPCStream()
-  const arrowTable = tableFromIPC(ipcStream)
-
-  // Extract schema
-  const arrowSchema = arrowTable.schema
-  const schemaInfo: ParquetSchema[] = arrowSchema.fields.map((field) => ({
+  const schemaInfo: ParquetSchema[] = schemaTable.schema.fields.map((field) => ({
     name: field.name,
     type: String(field.type),
     nullable: field.nullable,
   }))
 
+  parquetFile.free()
+
+  return {
+    numRows,
+    numRowGroups,
+    schema: schemaInfo,
+    fileSize: file.size,
+  }
+}
+
+// Read data with pagination support
+export async function readParquetData(
+  file: File,
+  options: ReadOptions = {}
+): Promise<{
+  rows: Record<string, unknown>[]
+  columns: string[]
+  totalRows: number
+  loadedRows: number
+  hasMore: boolean
+}> {
+  await initParquet()
+
+  const { limit = 1000, offset = 0 } = options
+
+  const parquetFile = await ParquetFile.fromFile(file)
+
+  // Get total rows
+  const parquetMetadata = parquetFile.metadata()
+  const fileMetadata = parquetMetadata.fileMetadata()
+  const totalRows = Number(fileMetadata.numRows())
+
+  // Read the table with limit and offset
+  const wasmTable = await parquetFile.read({
+    limit,
+    offset,
+  })
+
+  // Convert to Arrow IPC and parse with apache-arrow
+  const ipcStream = wasmTable.intoIPCStream()
+  const arrowTable = tableFromIPC(ipcStream)
+
   // Get column names
-  const columns = arrowSchema.fields.map((field) => field.name)
+  const columns = arrowTable.schema.fields.map((field) => field.name)
 
   // Convert Arrow table to array of objects
   const rows: Record<string, unknown>[] = []
@@ -78,14 +123,57 @@ export async function readParquetFile(file: File): Promise<ParquetData> {
   // Cleanup
   parquetFile.free()
 
+  const loadedRows = offset + rows.length
+  const hasMore = loadedRows < totalRows
+
+  return {
+    rows,
+    columns,
+    totalRows,
+    loadedRows,
+    hasMore,
+  }
+}
+
+// Convenience function for initial load
+export async function readParquetFile(
+  file: File,
+  initialLimit: number = 1000
+): Promise<ParquetData> {
+  await initParquet()
+
+  // Read metadata first
+  const metadata = await readParquetMetadata(file)
+
+  // Then read initial data
+  const { rows, columns, loadedRows, hasMore } = await readParquetData(file, {
+    limit: initialLimit,
+    offset: 0,
+  })
+
   return {
     columns,
     rows,
-    metadata: {
-      numRows,
-      numRowGroups,
-      schema: schemaInfo,
-      fileSize: file.size,
-    },
+    metadata,
+    hasMore,
+    loadedRows,
   }
+}
+
+// Load more data incrementally
+export async function loadMoreParquetData(
+  file: File,
+  currentOffset: number,
+  batchSize: number = 1000
+): Promise<{
+  rows: Record<string, unknown>[]
+  loadedRows: number
+  hasMore: boolean
+}> {
+  const { rows, loadedRows, hasMore } = await readParquetData(file, {
+    limit: batchSize,
+    offset: currentOffset,
+  })
+
+  return { rows, loadedRows, hasMore }
 }

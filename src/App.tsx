@@ -13,15 +13,18 @@ import {
   X,
   Github,
   Loader2,
+  Download,
 } from "lucide-react"
-import { readParquetFile, type ParquetData } from "@/lib/parquet"
+import { readParquetFile, loadMoreParquetData, type ParquetData } from "@/lib/parquet"
 
 type ViewMode = "data" | "schema"
 
 export default function App() {
   const [data, setData] = useState<ParquetData | null>(null)
   const [fileName, setFileName] = useState<string>("")
+  const [currentFile, setCurrentFile] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>("data")
 
@@ -30,9 +33,13 @@ export default function App() {
     setError(null)
 
     try {
-      const parquetData = await readParquetFile(file)
+      // Determine initial load size based on file size
+      const initialLimit = file.size > 10 * 1024 * 1024 ? 500 : 1000 // 500 rows for files >10MB
+
+      const parquetData = await readParquetFile(file, initialLimit)
       setData(parquetData)
       setFileName(file.name)
+      setCurrentFile(file)
     } catch (err) {
       console.error("Error reading parquet file:", err)
       setError(
@@ -43,9 +50,38 @@ export default function App() {
     }
   }, [])
 
+  const handleLoadMore = useCallback(async () => {
+    if (!currentFile || !data || !data.hasMore) return
+
+    setIsLoadingMore(true)
+    try {
+      const batchSize = currentFile.size > 10 * 1024 * 1024 ? 500 : 1000
+      const { rows: newRows, loadedRows, hasMore } = await loadMoreParquetData(
+        currentFile,
+        data.loadedRows,
+        batchSize
+      )
+
+      setData({
+        ...data,
+        rows: [...data.rows, ...newRows],
+        loadedRows,
+        hasMore,
+      })
+    } catch (err) {
+      console.error("Error loading more data:", err)
+      setError(
+        err instanceof Error ? err.message : "Failed to load more data"
+      )
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }, [currentFile, data])
+
   const handleReset = useCallback(() => {
     setData(null)
     setFileName("")
+    setCurrentFile(null)
     setError(null)
     setViewMode("data")
   }, [])
@@ -128,7 +164,7 @@ export default function App() {
                 <div>
                   <p className="font-medium">{fileName}</p>
                   <p className="text-sm text-muted-foreground">
-                    {data.metadata.numRows.toLocaleString()} rows,{" "}
+                    Showing {data.loadedRows.toLocaleString()} of {data.metadata.numRows.toLocaleString()} rows,{" "}
                     {data.columns.length} columns
                   </p>
                 </div>
@@ -138,6 +174,18 @@ export default function App() {
                 Close
               </Button>
             </div>
+
+            {/* Warning for large files */}
+            {data.hasMore && data.metadata.numRows > 10000 && (
+              <Card className="border-amber-500/50 bg-amber-500/5">
+                <CardContent className="p-4">
+                  <p className="text-sm text-amber-700">
+                    Large file detected. Data is loaded in batches for better performance.
+                    {data.metadata.numRows > 100000 && " Consider loading only what you need."}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Stats */}
             <StatsCards metadata={data.metadata} />
@@ -173,7 +221,36 @@ export default function App() {
               </CardHeader>
               <CardContent>
                 {viewMode === "data" ? (
-                  <DataTable data={data} />
+                  <div className="space-y-4">
+                    <DataTable data={data} />
+
+                    {/* Load More Button */}
+                    {data.hasMore && (
+                      <div className="flex items-center justify-center gap-4 pt-4">
+                        <Button
+                          onClick={handleLoadMore}
+                          disabled={isLoadingMore}
+                          variant="outline"
+                          className="gap-2"
+                        >
+                          {isLoadingMore ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              <Download className="w-4 h-4" />
+                              Load More Rows
+                            </>
+                          )}
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                          {(data.metadata.numRows - data.loadedRows).toLocaleString()} rows remaining
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <SchemaViewer schema={data.metadata.schema} />
                 )}
