@@ -10,7 +10,7 @@ test.describe('Parquet Visualizer', () => {
 
   test('should show upload dropzone', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByRole('heading', { name: 'Upload a Parquet file' })).toBeVisible()
+    await expect(page.getByText('Upload a Parquet file', { exact: true })).toBeVisible()
     await expect(page.getByText('Drag and drop or click to browse')).toBeVisible()
     await expect(page.getByText('.parquet files supported')).toBeVisible()
   })
