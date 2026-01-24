@@ -26,6 +26,9 @@ jobs:
       - name: Run tests
         run: bun run test
 
+      - name: Build
+        run: bun run build
+
       - name: Install Playwright Browsers
         if: github.event_name == 'pull_request'
         run: bunx playwright install --with-deps chromium
@@ -33,6 +36,3 @@ jobs:
       - name: Run E2E tests
         if: github.event_name == 'pull_request'
         run: bun run test:e2e
-
-      - name: Build
-        run: bun run build
