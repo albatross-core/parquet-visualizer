@@ -5,7 +5,6 @@ import { SchemaViewer } from "@/components/SchemaViewer"
 import { StatsCards } from "@/components/StatsCards"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import {
   FileSpreadsheet,
   Table2,
@@ -137,12 +136,6 @@ export default function App() {
                 </CardContent>
               </Card>
             )}
-
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Badge variant="outline">WebAssembly Powered</Badge>
-              <Badge variant="outline">Client-Side Only</Badge>
-              <Badge variant="outline">Privacy First</Badge>
-            </div>
           </div>
         )}
 
