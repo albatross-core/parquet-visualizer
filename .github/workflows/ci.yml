@@ -24,7 +24,7 @@ jobs:
         run: bun install
 
       - name: Run tests
-        run: bun test
+        run: bun run test
 
       - name: Install Playwright Browsers
         if: github.event_name == 'pull_request'
