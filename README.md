@@ -1,15 +1,19 @@
 # Parquet Visualizer
 
+[![Deploy to GitHub Pages](https://github.com/albatross-core/parquet-visualizer/actions/workflows/deploy.yml/badge.svg)](https://github.com/albatross-core/parquet-visualizer/actions/workflows/deploy.yml)
+
 A beautiful, client-side Parquet file visualizer built with React, Vite, Tailwind CSS, and parquet-wasm. Upload and explore Apache Parquet files directly in your browser - no data is sent to any server.
 
 ## Features
 
 - 📊 **Interactive Data Table** - Sort and paginate through your data
-- 🔍 **Schema Viewer** - Inspect column types and metadata
+- 🔍 **Global Search** - Search across all columns in real-time
+- 📋 **Schema Viewer** - Inspect column types and metadata
 - 📈 **Statistics** - View file metrics (rows, columns, size, row groups)
+- ⚡ **Lazy Loading** - Optimized for large files with progressive data loading
 - 🎨 **Beautiful UI** - Modern design with Tailwind CSS and shadcn/ui
 - 🔒 **Privacy First** - Everything runs client-side using WebAssembly
-- ⚡ **Fast** - Powered by parquet-wasm for optimal performance
+- 🚀 **Fast** - Powered by parquet-wasm for optimal performance
 - 📱 **Responsive** - Works on all screen sizes
 
 ## Development
