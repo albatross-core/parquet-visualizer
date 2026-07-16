@@ -48,7 +48,25 @@ async function openParquet(source: ParquetSource): Promise<ParquetFile> {
   if (source instanceof File) {
     return ParquetFile.fromFile(source)
   }
+  // parquet-wasm's fromUrl hangs indefinitely (rather than rejecting) when the
+  // server blocks the request — most commonly a missing CORS policy. Probe with
+  // a plain fetch first: it fails fast and throws a catchable error, so the UI
+  // can show a real message instead of spinning forever.
+  await probeUrl(source.url)
   return ParquetFile.fromUrl(source.url)
+}
+
+// Verify a remote URL is actually fetchable before parquet-wasm reads it.
+// A 1-byte range GET (not HEAD — presigned URLs are signed for GET only)
+// surfaces CORS blocks and 4xx/5xx responses as thrown errors.
+async function probeUrl(url: string): Promise<void> {
+  const res = await fetch(url, { headers: { Range: "bytes=0-0" } })
+  // 206 = range honored, 200 = full body (range ignored) — both are readable.
+  if (res.status !== 206 && res.status !== 200) {
+    throw new Error(
+      `The server returned ${res.status} ${res.statusText} for this URL.`
+    )
+  }
 }
 
 // Best-effort size lookup for remote sources. Uses a 1-byte range GET

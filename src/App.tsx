@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react"
 import { FileDropzone } from "@/components/FileDropzone"
 import { UrlInput } from "@/components/UrlInput"
+import { LoadErrorCard } from "@/components/LoadErrorCard"
 import { DataTable } from "@/components/DataTable"
 import { SchemaViewer } from "@/components/SchemaViewer"
 import { StatsCards } from "@/components/StatsCards"
@@ -25,7 +26,6 @@ import {
   validateParquetUrl,
   fileNameFromUrl,
   isLikelyCorsError,
-  s3CorsSnippet,
 } from "@/lib/parquet-url"
 
 type ViewMode = "data" | "schema"
@@ -176,35 +176,7 @@ export default function App() {
 
             <UrlInput onUrlSubmit={handleUrlSelect} isLoading={isLoading} />
 
-            {error && (
-              <Card className="border-destructive/50 bg-destructive/5">
-                <CardContent className="p-4 space-y-3">
-                  <p className="text-sm text-destructive">{error}</p>
-
-                  {errorIsCors && (
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <p>
-                        This usually means the file's server doesn't allow
-                        cross-origin requests (CORS) from this app — or the URL
-                        is unreachable. If it's your S3 bucket, add a CORS rule:
-                        open the <strong>S3 console</strong> → your bucket →{" "}
-                        <strong>Permissions</strong> →{" "}
-                        <strong>Cross-origin resource sharing (CORS)</strong> →{" "}
-                        <strong>Edit</strong>, and paste:
-                      </p>
-                      <pre className="p-3 rounded-lg bg-muted text-xs overflow-x-auto">
-                        {s3CorsSnippet(window.location.origin)}
-                      </pre>
-                      <p>
-                        CORS only tells the browser it may make the request —
-                        private objects still require a presigned URL or
-                        credentials.
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+            {error && <LoadErrorCard message={error} isCors={errorIsCors} />}
           </div>
         )}
 
