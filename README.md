@@ -50,6 +50,10 @@ bun run preview
 - [Apache Arrow](https://arrow.apache.org/docs/js/) - Data processing
 - [TanStack Table](https://tanstack.com/table) - Table functionality
 
+## Contributing
+
+Contributions are welcome! Please read the [Contributing Guide](CONTRIBUTING.md) and our [Code of Conduct](CODE_OF_CONDUCT.md) before opening a pull request. To report a security issue, see the [Security Policy](SECURITY.md).
+
 ## License
 
-MIT
+[MIT](LICENSE) © Albatross AI
