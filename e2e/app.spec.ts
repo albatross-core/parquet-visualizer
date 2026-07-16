@@ -36,6 +36,30 @@ test.describe('Parquet Visualizer', () => {
     const fileInput = page.locator('input[type="file"]')
     await expect(fileInput).toBeAttached()
   })
+
+  test('should show URL input', async ({ page }) => {
+    await page.goto('/')
+    const urlInput = page.locator('input[type="url"]')
+    await expect(urlInput).toBeVisible()
+    await expect(page.getByRole('button', { name: /Open/ })).toBeVisible()
+    await expect(page.getByText('HTTP range requests', { exact: false })).toBeVisible()
+  })
+
+  test('should reject s3:// URLs with presign guidance', async ({ page }) => {
+    await page.goto('/')
+    const urlInput = page.locator('input[type="url"]')
+    await urlInput.fill('s3://my-bucket/data.parquet')
+    await page.getByRole('button', { name: /Open/ }).click()
+    await expect(page.getByText(/presigned URL/)).toBeVisible()
+  })
+
+  test('should reject invalid URLs', async ({ page }) => {
+    await page.goto('/')
+    const urlInput = page.locator('input[type="url"]')
+    await urlInput.fill('not a url')
+    await page.getByRole('button', { name: /Open/ }).click()
+    await expect(page.getByText("That doesn't look like a valid URL")).toBeVisible()
+  })
 })
 
 test.describe('File Upload (requires sample file)', () => {
