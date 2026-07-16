@@ -7,6 +7,7 @@ A beautiful, client-side Parquet file visualizer built with React, Vite, Tailwin
 ## Features
 
 - 📊 **Interactive Data Table** - Sort and paginate through your data
+- 🌐 **Open from URL** - Stream files from S3, R2, MinIO, or any HTTP server using range requests — browse huge files without downloading them
 - 🔍 **Global Search** - Search across all columns in real-time
 - 📋 **Schema Viewer** - Inspect column types and metadata
 - 📈 **Statistics** - View file metrics (rows, columns, size, row groups)
@@ -15,6 +16,38 @@ A beautiful, client-side Parquet file visualizer built with React, Vite, Tailwin
 - 🔒 **Privacy First** - Everything runs client-side using WebAssembly
 - 🚀 **Fast** - Powered by parquet-wasm for optimal performance
 - 📱 **Responsive** - Works on all screen sizes
+
+## Opening Files from S3 (or Any URL)
+
+Paste an `https://` URL into the "Open from URL" field (or link directly with `?url=https://...`). The file is read with **HTTP range requests** — only the footer metadata and the row groups you actually view are downloaded, so multi-gigabyte files open in seconds. As always, data goes straight from the server to your browser; nothing passes through ours.
+
+### Private buckets
+
+Browsers can't use your AWS console session or `s3://` URIs — S3 requests must be presigned or signed with credentials. The easiest path is a presigned URL:
+
+```bash
+aws s3 presign s3://my-bucket/data.parquet --expires-in 3600
+```
+
+Paste the resulting URL into the app.
+
+### CORS setup (required once per bucket)
+
+Your bucket must allow cross-origin reads from the app. In the **S3 console** → your bucket → **Permissions** → **Cross-origin resource sharing (CORS)** → **Edit**, paste:
+
+```json
+[
+  {
+    "AllowedOrigins": ["https://albatross-core.github.io"],
+    "AllowedMethods": ["GET", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["Content-Range", "Content-Length", "ETag"],
+    "MaxAgeSeconds": 3000
+  }
+]
+```
+
+(If you self-host the app, replace the origin with your own.) Note that CORS only permits the browser to make the request — it does not make private objects public. S3-compatible stores like MinIO and Cloudflare R2 have equivalent CORS settings and work the same way.
 
 ## Development
 

@@ -1,5 +1,7 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { FileDropzone } from "@/components/FileDropzone"
+import { UrlInput } from "@/components/UrlInput"
+import { LoadErrorCard } from "@/components/LoadErrorCard"
 import { DataTable } from "@/components/DataTable"
 import { SchemaViewer } from "@/components/SchemaViewer"
 import { StatsCards } from "@/components/StatsCards"
@@ -14,49 +16,85 @@ import {
   Loader2,
   Download,
 } from "lucide-react"
-import { readParquetFile, loadMoreParquetData, type ParquetData } from "@/lib/parquet"
+import {
+  readParquetFile,
+  loadMoreParquetData,
+  type ParquetData,
+  type ParquetSource,
+} from "@/lib/parquet"
+import {
+  validateParquetUrl,
+  fileNameFromUrl,
+  isLikelyCorsError,
+} from "@/lib/parquet-url"
 
 type ViewMode = "data" | "schema"
 
 export default function App() {
   const [data, setData] = useState<ParquetData | null>(null)
   const [fileName, setFileName] = useState<string>("")
-  const [currentFile, setCurrentFile] = useState<File | null>(null)
+  const [currentSource, setCurrentSource] = useState<ParquetSource | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [errorIsCors, setErrorIsCors] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>("data")
 
-  const handleFileSelect = useCallback(async (file: File) => {
+  const loadSource = useCallback(async (source: ParquetSource, name: string) => {
     setIsLoading(true)
     setError(null)
+    setErrorIsCors(false)
 
     try {
-      // Determine initial load size based on file size
-      const initialLimit = file.size > 10 * 1024 * 1024 ? 500 : 1000 // 500 rows for files >10MB
+      // Determine initial load size based on file size (unknown for URLs, so be conservative)
+      const sourceSize = source instanceof File ? source.size : null
+      const initialLimit = sourceSize === null || sourceSize > 10 * 1024 * 1024 ? 500 : 1000
 
-      const parquetData = await readParquetFile(file, initialLimit)
+      const parquetData = await readParquetFile(source, initialLimit)
       setData(parquetData)
-      setFileName(file.name)
-      setCurrentFile(file)
+      setFileName(name)
+      setCurrentSource(source)
     } catch (err) {
       console.error("Error reading parquet file:", err)
       setError(
         err instanceof Error ? err.message : "Failed to read parquet file"
       )
+      setErrorIsCors(!(source instanceof File) && isLikelyCorsError(err))
     } finally {
       setIsLoading(false)
     }
   }, [])
 
+  const handleFileSelect = useCallback(
+    (file: File) => loadSource(file, file.name),
+    [loadSource]
+  )
+
+  const handleUrlSelect = useCallback(
+    (url: string) => loadSource({ url }, fileNameFromUrl(url)),
+    [loadSource]
+  )
+
+  // Support deep links: ?url=https://... opens the file on page load
+  useEffect(() => {
+    const param = new URLSearchParams(window.location.search).get("url")
+    if (param) {
+      const result = validateParquetUrl(param)
+      if (result.ok) {
+        handleUrlSelect(result.url)
+      }
+    }
+  }, [handleUrlSelect])
+
   const handleLoadMore = useCallback(async () => {
-    if (!currentFile || !data || !data.hasMore) return
+    if (!currentSource || !data || !data.hasMore) return
 
     setIsLoadingMore(true)
     try {
-      const batchSize = currentFile.size > 10 * 1024 * 1024 ? 500 : 1000
+      const fileSize = data.metadata.fileSize
+      const batchSize = fileSize === null || fileSize > 10 * 1024 * 1024 ? 500 : 1000
       const { rows: newRows, loadedRows, hasMore } = await loadMoreParquetData(
-        currentFile,
+        currentSource,
         data.loadedRows,
         batchSize
       )
@@ -75,13 +113,14 @@ export default function App() {
     } finally {
       setIsLoadingMore(false)
     }
-  }, [currentFile, data])
+  }, [currentSource, data])
 
   const handleReset = useCallback(() => {
     setData(null)
     setFileName("")
-    setCurrentFile(null)
+    setCurrentSource(null)
     setError(null)
+    setErrorIsCors(false)
     setViewMode("data")
   }, [])
 
@@ -129,13 +168,15 @@ export default function App() {
 
             <FileDropzone onFileSelect={handleFileSelect} isLoading={isLoading} />
 
-            {error && (
-              <Card className="border-destructive/50 bg-destructive/5">
-                <CardContent className="p-4">
-                  <p className="text-sm text-destructive">{error}</p>
-                </CardContent>
-              </Card>
-            )}
+            <div className="flex items-center gap-4">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs text-muted-foreground uppercase">or</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <UrlInput onUrlSubmit={handleUrlSelect} isLoading={isLoading} />
+
+            {error && <LoadErrorCard message={error} isCors={errorIsCors} />}
           </div>
         )}
 

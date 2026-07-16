@@ -29,7 +29,7 @@ export function StatsCards({ metadata }: StatsCardsProps) {
     },
     {
       label: "File Size",
-      value: formatBytes(metadata.fileSize),
+      value: metadata.fileSize !== null ? formatBytes(metadata.fileSize) : "—",
       icon: HardDrive,
       color: "text-amber-600 bg-amber-500/10",
     },
