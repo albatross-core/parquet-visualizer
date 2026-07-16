@@ -2,6 +2,25 @@
   "name": "parquet-visualizer",
   "private": true,
   "version": "0.0.0",
+  "description": "A client-side Apache Parquet file visualizer — upload and explore Parquet files directly in your browser, no data leaves your machine",
+  "author": "Albatross AI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/albatross-core/parquet-visualizer.git"
+  },
+  "homepage": "https://github.com/albatross-core/parquet-visualizer#readme",
+  "bugs": {
+    "url": "https://github.com/albatross-core/parquet-visualizer/issues"
+  },
+  "keywords": [
+    "parquet",
+    "apache-parquet",
+    "visualizer",
+    "data-viewer",
+    "wasm",
+    "react"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
