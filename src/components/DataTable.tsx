@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ColumnFilters } from "@/components/ColumnFilters"
+import { RowInspector } from "@/components/RowInspector"
 import {
   ChevronLeft,
   ChevronRight,
@@ -45,6 +46,7 @@ export function DataTable({ data }: DataTableProps) {
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({})
   const [dataTypeFilter, setDataTypeFilter] = useState<string | null>(null)
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
+  const [selectedRow, setSelectedRow] = useState<Record<string, unknown> | null>(null)
 
   // Filter data based on column-specific filters
   const filteredRows = useMemo(() => {
@@ -295,7 +297,12 @@ export function DataTable({ data }: DataTableProps) {
             <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow
+                    key={row.id}
+                    className="cursor-pointer"
+                    title="Click to inspect row"
+                    onClick={() => setSelectedRow(row.original)}
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id} className="whitespace-nowrap">
                         {flexRender(
@@ -321,9 +328,17 @@ export function DataTable({ data }: DataTableProps) {
         </div>
       </div>
 
+      {selectedRow && (
+        <RowInspector
+          row={selectedRow}
+          columns={data.columns}
+          onClose={() => setSelectedRow(null)}
+        />
+      )}
+
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{" "}
+          Click a row to inspect it. Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{" "}
           {Math.min(
             (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
             filteredRowCount

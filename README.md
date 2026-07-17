@@ -9,6 +9,7 @@ A beautiful, client-side Parquet file visualizer built with React, Vite, Tailwin
 - 📊 **Interactive Data Table** - Sort and paginate through your data
 - 🌐 **Open from URL** - Stream files from S3, R2, MinIO, or any HTTP server using range requests — browse huge files without downloading them
 - 🔍 **Global Search** - Search across all columns in real-time
+- 🧾 **Row Inspector** - Click any row to see all its values; embedded JSON payloads are parsed and pretty-printed with syntax highlighting
 - 📋 **Schema Viewer** - Inspect column types and metadata
 - 📈 **Statistics** - View file metrics (rows, columns, size, row groups)
 - ⚡ **Lazy Loading** - Optimized for large files with progressive data loading
