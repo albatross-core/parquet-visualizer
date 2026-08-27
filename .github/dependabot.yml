@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: "bun"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
+    ignore:
+      # The e2e job runs in mcr.microsoft.com/playwright:v1.58.0-jammy, which
+      # Dependabot can't see or bump. Playwright fails when the client and the
+      # browser image disagree on version, so move these two together by hand.
+      - dependency-name: "@playwright/test"
+
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
