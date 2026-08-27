@@ -34,7 +34,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-table": "^9.1.2",
     "@tanstack/react-virtual": "^3.13.18",
     "apache-arrow": "^21.1.0",
     "class-variance-authority": "^0.7.1",
