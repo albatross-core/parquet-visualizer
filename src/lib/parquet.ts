@@ -1,5 +1,5 @@
 import initWasm, { ParquetFile } from "parquet-wasm"
-import { tableFromIPC } from "apache-arrow"
+import { DataType, tableFromIPC } from "apache-arrow"
 // @ts-ignore - WASM import
 import wasmUrl from "parquet-wasm/esm/parquet_wasm_bg.wasm?url"
 
@@ -162,6 +162,15 @@ export async function readParquetData(
   // Get column names
   const columns = arrowTable.schema.fields.map((field) => field.name)
 
+  // apache-arrow returns timestamp/date values as epoch milliseconds (with a
+  // fractional part for micro/nanosecond columns). Show them as ISO 8601
+  // strings instead of raw numbers.
+  const dateColumns = new Set(
+    arrowTable.schema.fields
+      .filter((field) => DataType.isTimestamp(field.type) || DataType.isDate(field.type))
+      .map((field) => field.name)
+  )
+
   // Convert Arrow table to array of objects
   const rows: Record<string, unknown>[] = []
 
@@ -170,7 +179,10 @@ export async function readParquetData(
     for (const column of columns) {
       const col = arrowTable.getChild(column)
       if (col) {
-        row[column] = col.get(i)
+        const value = col.get(i)
+        const date = dateColumns.has(column) && typeof value === "number" ? new Date(value) : null
+        // Out-of-range values (e.g. int64 max used as "infinity") give an Invalid Date; keep the raw number
+        row[column] = date && !Number.isNaN(date.getTime()) ? date.toISOString() : value
       }
     }
     rows.push(row)
