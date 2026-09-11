@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { X, Copy, Check, Braces } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { JsonView } from "@/components/JsonView"
-import { tryParseJson, rowToJson } from "@/lib/json-view"
+import { rowToJson, rowToObject } from "@/lib/json-view"
 
 interface RowInspectorProps {
   row: Record<string, unknown>
@@ -13,6 +12,7 @@ interface RowInspectorProps {
 
 export function RowInspector({ row, columns, onClose }: RowInspectorProps) {
   const [copied, setCopied] = useState(false)
+  const value = useMemo(() => rowToObject(row, columns), [row, columns])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -69,54 +69,10 @@ export function RowInspector({ row, columns, onClose }: RowInspectorProps) {
           </div>
         </div>
 
-        <div className="overflow-y-auto px-6 py-4 space-y-4">
-          {columns.map((col) => {
-            const value = row[col]
-            const parsed = tryParseJson(value)
-            const isObject =
-              parsed !== undefined ||
-              (value !== null && typeof value === "object" && !(value instanceof Date))
-
-            return (
-              <div key={col} className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium">{col}</p>
-                  {parsed !== undefined && (
-                    <Badge variant="secondary" className="h-4 px-1 text-[10px]">
-                      JSON
-                    </Badge>
-                  )}
-                </div>
-                {isObject ? (
-                  <JsonView value={parsed !== undefined ? parsed : value} />
-                ) : (
-                  <RowValue value={value} />
-                )}
-              </div>
-            )
-          })}
+        <div className="overflow-y-auto px-6 py-4">
+          <JsonView value={value} />
         </div>
       </div>
     </div>
   )
-}
-
-function RowValue({ value }: { value: unknown }) {
-  if (value === null || value === undefined) {
-    return <p className="text-sm text-muted-foreground italic">null</p>
-  }
-  if (typeof value === "boolean") {
-    return (
-      <p className={`text-sm font-mono ${value ? "text-emerald-600" : "text-rose-600"}`}>
-        {String(value)}
-      </p>
-    )
-  }
-  if (typeof value === "number" || typeof value === "bigint") {
-    return <p className="text-sm font-mono text-blue-600">{value.toLocaleString()}</p>
-  }
-  if (value instanceof Date) {
-    return <p className="text-sm font-mono">{value.toISOString()}</p>
-  }
-  return <p className="text-sm break-all whitespace-pre-wrap">{String(value)}</p>
 }

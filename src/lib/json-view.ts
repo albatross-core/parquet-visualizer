@@ -32,17 +32,25 @@ export function stringifyPretty(value: unknown): string {
   return result === undefined ? String(value) : result
 }
 
-// Serialize a full row for the copy button, expanding embedded JSON
-// strings so the copied output matches what the inspector displays.
-export function rowToJson(
+// Build a plain object for a full row in column order, expanding embedded
+// JSON strings so payload columns show as nested objects.
+export function rowToObject(
   row: Record<string, unknown>,
   columns: string[]
-): string {
+): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const col of columns) {
     const value = row[col]
     const parsed = tryParseJson(value)
     out[col] = parsed !== undefined ? parsed : value
   }
-  return stringifyPretty(out)
+  return out
+}
+
+// Serialize a full row for the copy button.
+export function rowToJson(
+  row: Record<string, unknown>,
+  columns: string[]
+): string {
+  return stringifyPretty(rowToObject(row, columns))
 }
