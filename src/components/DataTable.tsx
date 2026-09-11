@@ -96,6 +96,12 @@ export function DataTable({ data }: DataTableProps) {
     return cols
   }, [data.columns, data.metadata.schema, dataTypeFilter, columnVisibility])
 
+  // Timestamp/date columns arrive as ISO strings; colour them by schema type
+  const dateColumns = useMemo(() => {
+    const isDate = (type: string) => type.includes("timestamp") || type.includes("date")
+    return new Set(data.metadata.schema.filter((f) => isDate(f.type.toLowerCase())).map((f) => f.name))
+  }, [data.metadata.schema])
+
   const columns = useMemo<ColumnDef<Record<string, unknown>>[]>(() => {
     return visibleColumns.map((col) => ({
       accessorKey: col,
@@ -151,6 +157,9 @@ export function DataTable({ data }: DataTableProps) {
           )
         }
         const strValue = String(value)
+        if (dateColumns.has(col)) {
+          return <span className="font-mono text-violet-600">{strValue}</span>
+        }
         if (strValue.length > 100) {
           return (
             <span className="max-w-[300px] truncate block" title={strValue}>
@@ -162,7 +171,7 @@ export function DataTable({ data }: DataTableProps) {
       },
       filterFn: useRegex ? "auto" : "includesString",
     }))
-  }, [visibleColumns, useRegex, columnFilters])
+  }, [visibleColumns, useRegex, columnFilters, dateColumns])
 
   // Custom global filter function that supports regex
   const globalFilterFn = useMemo(() => {
