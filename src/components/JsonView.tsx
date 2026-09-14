@@ -16,6 +16,16 @@ export function JsonView({ value }: JsonViewProps) {
 
 const indent = (depth: number) => "  ".repeat(depth)
 
+// JSON-escape a string but keep real line breaks, indenting continuation
+// lines one level deeper than the key so multi-line text stays readable.
+const formatString = (value: string, depth: number) =>
+  '"' +
+  value
+    .split("\n")
+    .map((line) => JSON.stringify(line).slice(1, -1))
+    .join("\n" + indent(depth + 1)) +
+  '"'
+
 function hasToJSON(value: object): value is { toJSON: () => unknown } {
   return typeof (value as { toJSON?: unknown }).toJSON === "function"
 }
@@ -31,7 +41,7 @@ function JsonNode({ value, depth }: { value: unknown; depth: number }): ReactNod
     return <span className="text-sky-400">{value.toString()}</span>
   }
   if (typeof value === "string") {
-    return <span className="text-emerald-400">"{value}"</span>
+    return <span className="text-emerald-400">{formatString(value, depth)}</span>
   }
   if (value instanceof Date) {
     return <span className="text-emerald-400">"{value.toISOString()}"</span>
@@ -69,7 +79,7 @@ function JsonNode({ value, depth }: { value: unknown; depth: number }): ReactNod
         {entries.map(([key, entryValue], i) => (
           <span key={key}>
             {indent(depth + 1)}
-            <span className="text-amber-300">"{key}"</span>
+            <span className="text-amber-300">{JSON.stringify(key)}</span>
             {": "}
             <JsonNode value={entryValue} depth={depth + 1} />
             {i < entries.length - 1 ? "," : ""}

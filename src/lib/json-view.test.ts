@@ -2,6 +2,7 @@ import { describe, test, expect } from "bun:test"
 import {
   tryParseJson,
   stringifyPretty,
+  rowToObject,
   rowToJson,
 } from "./json-view"
 
@@ -55,6 +56,28 @@ describe("stringifyPretty", () => {
 
   test("handles undefined", () => {
     expect(stringifyPretty(undefined)).toBe("undefined")
+  })
+})
+
+describe("rowToObject", () => {
+  test("expands embedded JSON strings and keeps other values as-is", () => {
+    const row = {
+      event: "ItemViewedEvent",
+      payload: '{"category_id":"3.5","item_price":40}',
+      count: 2n,
+      missing: null,
+    }
+    expect(rowToObject(row, ["event", "payload", "count", "missing"])).toEqual({
+      event: "ItemViewedEvent",
+      payload: { category_id: "3.5", item_price: 40 },
+      count: 2n,
+      missing: null,
+    })
+  })
+
+  test("follows column order and skips columns not in the list", () => {
+    const row = { b: 2, a: 1, hidden: 3 }
+    expect(Object.keys(rowToObject(row, ["a", "b"]))).toEqual(["a", "b"])
   })
 })
 
