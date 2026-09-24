@@ -1,7 +1,8 @@
 import initWasm, { ParquetFile } from "parquet-wasm"
-import { tableFromIPC } from "apache-arrow"
+import { DataType, tableFromIPC } from "apache-arrow"
 // @ts-ignore - WASM import
 import wasmUrl from "parquet-wasm/esm/parquet_wasm_bg.wasm?url"
+import { epochMsToIso } from "./dates"
 
 export interface ParquetSchema {
   name: string
@@ -162,6 +163,13 @@ export async function readParquetData(
   // Get column names
   const columns = arrowTable.schema.fields.map((field) => field.name)
 
+  // Timestamp/date columns are shown as ISO 8601 strings instead of raw numbers
+  const dateColumns = new Set(
+    arrowTable.schema.fields
+      .filter((field) => DataType.isTimestamp(field.type) || DataType.isDate(field.type))
+      .map((field) => field.name)
+  )
+
   // Convert Arrow table to array of objects
   const rows: Record<string, unknown>[] = []
 
@@ -170,7 +178,8 @@ export async function readParquetData(
     for (const column of columns) {
       const col = arrowTable.getChild(column)
       if (col) {
-        row[column] = col.get(i)
+        const value = col.get(i)
+        row[column] = dateColumns.has(column) ? epochMsToIso(value) : value
       }
     }
     rows.push(row)
