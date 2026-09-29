@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { X, Copy, Check, Braces } from "lucide-react"
+import { X, Copy, Check, Braces, ChevronsDownUp, ChevronsUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { JsonView } from "@/components/JsonView"
 import { rowToJson, rowToObject } from "@/lib/json-view"
@@ -12,6 +12,8 @@ interface RowInspectorProps {
 
 export function RowInspector({ row, columns, onClose }: RowInspectorProps) {
   const [copied, setCopied] = useState(false)
+  // Remounting the view with a new key resets every node to `collapsed`
+  const [fold, setFold] = useState({ key: 0, collapsed: false })
   const value = useMemo(() => rowToObject(row, columns), [row, columns])
 
   useEffect(() => {
@@ -50,6 +52,15 @@ export function RowInspector({ row, columns, onClose }: RowInspectorProps) {
             <h3 className="font-semibold">Row Details</h3>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setFold((f) => ({ key: f.key + 1, collapsed: !f.collapsed }))}
+              className="gap-1"
+            >
+              {fold.collapsed ? <ChevronsUpDown className="w-4 h-4" /> : <ChevronsDownUp className="w-4 h-4" />}
+              {fold.collapsed ? "Expand all" : "Collapse all"}
+            </Button>
             <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1">
               {copied ? (
                 <>
@@ -70,7 +81,7 @@ export function RowInspector({ row, columns, onClose }: RowInspectorProps) {
         </div>
 
         <div className="overflow-y-auto px-6 py-4">
-          <JsonView value={value} />
+          <JsonView key={fold.key} value={value} defaultCollapsed={fold.collapsed} />
         </div>
       </div>
     </div>
