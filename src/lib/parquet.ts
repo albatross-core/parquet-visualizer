@@ -40,7 +40,7 @@ let wasmInitialized = false
 
 export async function initParquet() {
   if (!wasmInitialized) {
-    await initWasm(wasmUrl)
+    await initWasm({ module_or_path: wasmUrl })
     wasmInitialized = true
   }
 }
