@@ -42,7 +42,7 @@
     "lucide-react": "^0.563.0",
     "parquet-wasm": "^0.9.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react-dom": "^19.3.1",
     "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
@@ -50,7 +50,7 @@
     "@playwright/test": "^1.58.0",
     "@tailwindcss/vite": "^4.3.4",
     "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.5",
+    "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "eslint": "^10.12.0",
     "eslint-plugin-react-hooks": "^5.0.0",
